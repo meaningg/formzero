@@ -1,179 +1,209 @@
-import { useState, useEffect } from "react"
-import { useFetcher } from "react-router"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#/components/ui/card"
-import { Input } from "#/components/ui/input"
-import { Label } from "#/components/ui/label"
-import { ResultButton } from "#/components/result-button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "#/components/ui/tooltip"
-import { Mail, Lock, Server } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useFetcher } from "react-router";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "#/components/ui/card";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { ResultButton } from "#/components/result-button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "#/components/ui/tooltip";
+import { Mail, Lock, Server } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "#/components/ui/dialog"
-import type { Settings } from "#/types/settings"
+} from "#/components/ui/dialog";
+import type { Settings } from "#/types/settings";
 
 // SMTP configurations for common email providers
-const SMTP_CONFIGS: Record<string, { host: string; port: number; secure: boolean; hint: string }> = {
+const SMTP_CONFIGS: Record<
+  string,
+  { host: string; port: number; secure: boolean; hint: string }
+> = {
   "gmail.com": {
     host: "smtp.gmail.com",
     port: 587,
     secure: true,
-    hint: "For Gmail, use an App Password instead of your regular password. Go to Google Account → Security → 2-Step Verification → App passwords."
+    hint: "For Gmail, use an App Password instead of your regular password. Go to Google Account → Security → 2-Step Verification → App passwords.",
   },
   "outlook.com": {
     host: "smtp-mail.outlook.com",
     port: 587,
     secure: true,
-    hint: "For Outlook, use your regular Microsoft account password or an App Password if you have 2FA enabled."
+    hint: "For Outlook, use your regular Microsoft account password or an App Password if you have 2FA enabled.",
   },
   "hotmail.com": {
     host: "smtp-mail.outlook.com",
     port: 587,
     secure: true,
-    hint: "For Hotmail, use your regular Microsoft account password or an App Password if you have 2FA enabled."
+    hint: "For Hotmail, use your regular Microsoft account password or an App Password if you have 2FA enabled.",
   },
   "yahoo.com": {
     host: "smtp.mail.yahoo.com",
     port: 587,
     secure: true,
-    hint: "For Yahoo, generate an App Password at: Account Info → Account Security → Generate app password."
+    hint: "For Yahoo, generate an App Password at: Account Info → Account Security → Generate app password.",
   },
   "icloud.com": {
     host: "smtp.mail.me.com",
     port: 587,
     secure: true,
-    hint: "For iCloud, use an App-Specific Password. Go to appleid.apple.com → Sign-In and Security → App-Specific Passwords."
+    hint: "For iCloud, use an App-Specific Password. Go to appleid.apple.com → Sign-In and Security → App-Specific Passwords.",
   },
-}
+};
 
 function getEmailDomain(email: string): string | null {
-  const match = email.match(/@(.+)$/)
-  return match ? match[1].toLowerCase() : null
+  const match = email.match(/@(.+)$/);
+  return match ? match[1].toLowerCase() : null;
 }
 
 type SettingsDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  settings: Settings | null
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  settings: Settings | null;
+};
 
-export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogProps) {
-  const fetcher = useFetcher()
-  const testFetcher = useFetcher()
-  const clearFetcher = useFetcher()
+export function SettingsDialog({
+  open,
+  onOpenChange,
+  settings,
+}: SettingsDialogProps) {
+  const fetcher = useFetcher();
+  const testFetcher = useFetcher();
+  const clearFetcher = useFetcher();
 
   // Initialize with user's email if settings don't exist yet
-  const [email, setEmail] = useState(settings?.notification_email || "")
-  const [password, setPassword] = useState(settings?.notification_email_password || "")
-  const [smtpHost, setSmtpHost] = useState(settings?.smtp_host || "")
-  const [smtpPort, setSmtpPort] = useState(settings?.smtp_port?.toString() || "")
+  const [email, setEmail] = useState(settings?.notification_email || "");
+  const [password, setPassword] = useState(
+    settings?.notification_email_password || "",
+  );
+  const [smtpHost, setSmtpHost] = useState(settings?.smtp_host || "");
+  const [smtpPort, setSmtpPort] = useState(
+    settings?.smtp_port?.toString() || "",
+  );
 
   // Initialize emailDomain and smtpConfig from settings on mount
-  const initialEmail = settings?.notification_email || ""
-  const initialDomain = getEmailDomain(initialEmail)
-  const initialConfig = initialDomain && SMTP_CONFIGS[initialDomain] ? SMTP_CONFIGS[initialDomain] : null
+  const initialEmail = settings?.notification_email || "";
+  const initialDomain = getEmailDomain(initialEmail);
+  const initialConfig =
+    initialDomain && SMTP_CONFIGS[initialDomain]
+      ? SMTP_CONFIGS[initialDomain]
+      : null;
 
-  const [emailDomain, setEmailDomain] = useState<string | null>(initialDomain)
-  const [smtpConfig, setSmtpConfig] = useState<typeof SMTP_CONFIGS[string] | null>(initialConfig)
-  const [testPassed, setTestPassed] = useState(false)
-  const [testResultValid, setTestResultValid] = useState(true)
+  const [emailDomain, setEmailDomain] = useState<string | null>(initialDomain);
+  const [smtpConfig, setSmtpConfig] = useState<
+    (typeof SMTP_CONFIGS)[string] | null
+  >(initialConfig);
+  const [testPassed, setTestPassed] = useState(false);
+  const [testResultValid, setTestResultValid] = useState(true);
 
   // Update form when settings prop changes
   useEffect(() => {
     if (settings) {
-      setEmail(settings.notification_email || "")
-      setPassword(settings.notification_email_password || "")
-      setSmtpHost(settings.smtp_host || "")
-      setSmtpPort(settings.smtp_port?.toString() || "")
+      setEmail(settings.notification_email || "");
+      setPassword(settings.notification_email_password || "");
+      setSmtpHost(settings.smtp_host || "");
+      setSmtpPort(settings.smtp_port?.toString() || "");
     }
-  }, [settings])
+  }, [settings]);
 
   // Auto-detect SMTP settings based on email (debounced)
   useEffect(() => {
-    const domain = getEmailDomain(email)
+    const domain = getEmailDomain(email);
 
     if (!domain) {
-      setEmailDomain(null)
-      setSmtpConfig(null)
-      return
+      setEmailDomain(null);
+      setSmtpConfig(null);
+      return;
     }
 
     const timer = setTimeout(() => {
-      setEmailDomain(domain)
+      setEmailDomain(domain);
 
       if (SMTP_CONFIGS[domain]) {
-        const config = SMTP_CONFIGS[domain]
-        setSmtpConfig(config)
-        setSmtpHost(config.host)
-        setSmtpPort(config.port.toString())
+        const config = SMTP_CONFIGS[domain];
+        setSmtpConfig(config);
+        setSmtpHost(config.host);
+        setSmtpPort(config.port.toString());
       } else {
-        setSmtpConfig(null)
+        setSmtpConfig(null);
         if (!settings?.smtp_host) {
-          setSmtpHost("")
-          setSmtpPort("")
+          setSmtpHost("");
+          setSmtpPort("");
         }
       }
-    }, 500)
+    }, 500);
 
-    return () => clearTimeout(timer)
-  }, [email, settings?.smtp_host])
+    return () => clearTimeout(timer);
+  }, [email, settings?.smtp_host]);
 
-  const isSaving = fetcher.state === "submitting"
-  const isSaved = fetcher.state === "idle" && fetcher.data?.success
+  const isSaving = fetcher.state === "submitting";
+  const isSaved = fetcher.state === "idle" && fetcher.data?.success;
 
-  const isTesting = testFetcher.state === "submitting"
-  const testSuccess = testFetcher.state === "idle" && testFetcher.data?.success && testResultValid
+  const isTesting = testFetcher.state === "submitting";
+  const testSuccess =
+    testFetcher.state === "idle" &&
+    testFetcher.data?.success &&
+    testResultValid;
 
-  const isClearing = clearFetcher.state === "submitting"
-  const isCleared = clearFetcher.state === "idle" && clearFetcher.data?.success
+  const isClearing = clearFetcher.state === "submitting";
+  const isCleared = clearFetcher.state === "idle" && clearFetcher.data?.success;
 
   useEffect(() => {
     if (testSuccess) {
-      setTestPassed(true)
+      setTestPassed(true);
     }
-  }, [testSuccess])
+  }, [testSuccess]);
 
   useEffect(() => {
-    setTestPassed(false)
-    setTestResultValid(false)
-  }, [email, password, smtpHost, smtpPort])
+    setTestPassed(false);
+    setTestResultValid(false);
+  }, [email, password, smtpHost, smtpPort]);
 
   useEffect(() => {
     if (clearFetcher.state === "idle" && clearFetcher.data?.success) {
-      setEmail("")
-      setPassword("")
-      setSmtpHost("")
-      setSmtpPort("")
-      setEmailDomain(null)
-      setSmtpConfig(null)
-      setTestPassed(false)
-      setTestResultValid(false)
+      setEmail("");
+      setPassword("");
+      setSmtpHost("");
+      setSmtpPort("");
+      setEmailDomain(null);
+      setSmtpConfig(null);
+      setTestPassed(false);
+      setTestResultValid(false);
     }
-  }, [clearFetcher.state, clearFetcher.data])
+  }, [clearFetcher.state, clearFetcher.data]);
 
   const handleTestEmail = () => {
-    setTestResultValid(true)
+    setTestResultValid(true);
 
-    const formData = new FormData()
-    formData.append("notification_email", email)
-    formData.append("notification_email_password", password)
-    formData.append("smtp_host", smtpHost)
-    formData.append("smtp_port", smtpPort)
+    const formData = new FormData();
+    formData.append("notification_email", email);
+    formData.append("notification_email_password", password);
+    formData.append("smtp_host", smtpHost);
+    formData.append("smtp_port", smtpPort);
 
     testFetcher.submit(formData, {
       method: "post",
-      action: "/settings/notifications/test"
-    })
-  }
+      action: "/settings/notifications/test",
+    });
+  };
 
   const handleDisableNotifications = () => {
     clearFetcher.submit(null, {
       method: "delete",
-      action: "/settings/notifications"
-    })
-  }
+      action: "/settings/notifications",
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,7 +216,8 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
           <CardHeader>
             <CardTitle>Email Notifications</CardTitle>
             <CardDescription>
-              Configure email notifications for all form submissions
+              Настройте SMTP-аккаунт, с которого будут отправляться уведомления
+              о новых заявках
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -195,7 +226,7 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
                 <div className="space-y-2">
                   <Label htmlFor="email" className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    Your Email
+                    Email отправителя
                   </Label>
                   <Input
                     id="email"
@@ -207,14 +238,18 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
                     required
                   />
                   <p className="text-sm text-muted-foreground">
-                    This email will be used to send and receive notifications
+                    Email-адрес, с которого будут отправляться уведомления (поле
+                    «От»)
                   </p>
                 </div>
 
                 {emailDomain && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="flex items-center gap-2">
+                      <Label
+                        htmlFor="password"
+                        className="flex items-center gap-2"
+                      >
                         <Lock className="h-4 w-4" />
                         SMTP Password
                       </Label>
@@ -228,14 +263,19 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
                         required
                       />
                       <p className="text-sm text-muted-foreground">
-                        {smtpConfig ? smtpConfig.hint : "Use your email password or app-specific password"}
+                        {smtpConfig
+                          ? smtpConfig.hint
+                          : "Use your email password or app-specific password"}
                       </p>
                     </div>
 
                     {!smtpConfig && (
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="smtp-host" className="flex items-center gap-2">
+                          <Label
+                            htmlFor="smtp-host"
+                            className="flex items-center gap-2"
+                          >
                             <Server className="h-4 w-4" />
                             SMTP Host
                           </Label>
@@ -273,8 +313,16 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
 
                     {smtpConfig && (
                       <>
-                        <input type="hidden" name="smtp_host" value={smtpHost} />
-                        <input type="hidden" name="smtp_port" value={smtpPort} />
+                        <input
+                          type="hidden"
+                          name="smtp_host"
+                          value={smtpHost}
+                        />
+                        <input
+                          type="hidden"
+                          name="smtp_port"
+                          value={smtpPort}
+                        />
                       </>
                     )}
 
@@ -294,7 +342,9 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
                               isSuccess={testSuccess}
                               loadingText="Sending..."
                               successText="Test email sent!"
-                              disabled={!email || !password || !smtpHost || !smtpPort}
+                              disabled={
+                                !email || !password || !smtpHost || !smtpPort
+                              }
                               onClick={handleTestEmail}
                               className="w-full sm:w-auto"
                             >
@@ -317,7 +367,10 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Send a test email first to verify your settings</p>
+                                <p>
+                                  Send a test email first to verify your
+                                  settings
+                                </p>
                               </TooltipContent>
                             </Tooltip>
                           </div>
@@ -346,5 +399,5 @@ export function SettingsDialog({ open, onOpenChange, settings }: SettingsDialogP
         </Card>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

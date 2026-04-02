@@ -44,7 +44,7 @@ export async function loader({ context, params, request }: Route.LoaderArgs) {
 
   return data({
     form,
-    globalNotificationEmail: globalSettings?.notification_email ?? null,
+    smtpConfigured: !!globalSettings?.notification_email,
   });
 }
 
@@ -82,7 +82,7 @@ export async function action({ context, params, request }: Route.ActionArgs) {
 }
 
 export default function FormSettings() {
-  const { form, globalNotificationEmail } = useLoaderData<typeof loader>();
+  const { form, smtpConfigured } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   const [email, setEmail] = useState(form.notification_email ?? "");
@@ -94,16 +94,14 @@ export default function FormSettings() {
   const isSaving = fetcher.state === "submitting";
   const isSaved = fetcher.state === "idle" && fetcher.data?.success === true;
 
-  const effectiveEmail = email.trim() || globalNotificationEmail;
-
   return (
     <div className="flex flex-1 flex-col gap-3">
       <Card>
         <CardHeader>
-          <CardTitle>Notification Email</CardTitle>
+          <CardTitle>Уведомления</CardTitle>
           <CardDescription>
-            Set where new submissions for <strong>{form.name}</strong> should be
-            sent. Leave blank to use the global notification email.
+            Email-адрес, на который будут приходить заявки для формы{" "}
+            <strong>{form.name}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -114,40 +112,27 @@ export default function FormSettings() {
                 className="flex items-center gap-2"
               >
                 <Mail className="h-4 w-4" />
-                Recipient Email
+                Email получателя
               </Label>
               <Input
                 id="notification_email"
                 name="notification_email"
                 type="email"
-                placeholder={globalNotificationEmail ?? "you@example.com"}
+                placeholder="recipient@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
               <p className="text-sm text-muted-foreground">
-                Submissions will be forwarded to this address. Leave empty to
-                use the global setting.
+                На этот адрес будут приходить уведомления о новых заявках
               </p>
             </div>
 
-            {!email.trim() && globalNotificationEmail && (
-              <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {!smtpConfigured && (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 <Globe className="h-4 w-4 shrink-0" />
                 <span>
-                  Using global email:{" "}
-                  <strong className="text-foreground">
-                    {globalNotificationEmail}
-                  </strong>
-                </span>
-              </div>
-            )}
-
-            {!email.trim() && !globalNotificationEmail && (
-              <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                <Mail className="h-4 w-4 shrink-0" />
-                <span>
-                  No email configured. Set one above or configure global SMTP
-                  settings via the sidebar.
+                  SMTP не настроен. Настройте его в глобальных настройках, чтобы
+                  уведомления работали.
                 </span>
               </div>
             )}
@@ -160,10 +145,10 @@ export default function FormSettings() {
               type="submit"
               isSubmitting={isSaving}
               isSuccess={isSaved}
-              loadingText="Saving..."
-              successText="Saved!"
+              loadingText="Сохранение..."
+              successText="Сохранено!"
             >
-              Save
+              Сохранить
             </ResultButton>
           </fetcher.Form>
         </CardContent>
