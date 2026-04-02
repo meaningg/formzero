@@ -71,12 +71,14 @@ type SettingsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settings: Settings | null;
+  onSaved?: () => void;
 };
 
 export function SettingsDialog({
   open,
   onOpenChange,
   settings,
+  onSaved,
 }: SettingsDialogProps) {
   const fetcher = useFetcher();
   const testFetcher = useFetcher();
@@ -169,6 +171,12 @@ export function SettingsDialog({
     setTestPassed(false);
     setTestResultValid(false);
   }, [email, password, smtpHost, smtpPort]);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      onSaved?.();
+    }
+  }, [fetcher.state, fetcher.data]);
 
   useEffect(() => {
     if (clearFetcher.state === "idle" && clearFetcher.data?.success) {
