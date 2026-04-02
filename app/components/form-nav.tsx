@@ -1,5 +1,5 @@
-import { Database, Puzzle } from "lucide-react"
-import { NavLink, useParams } from "react-router"
+import { Database, Puzzle, Settings } from "lucide-react";
+import { NavLink, useParams } from "react-router";
 
 import {
   SidebarGroup,
@@ -7,14 +7,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "#/components/ui/sidebar"
+} from "#/components/ui/sidebar";
 
 export function FormNav() {
-  const params = useParams()
-  const formId = params.formId
+  const params = useParams();
+  const formId = params.formId;
 
   if (!formId) {
-    return null
+    return null;
   }
 
   const items = [
@@ -28,7 +28,12 @@ export function FormNav() {
       url: `/forms/${formId}/integration`,
       icon: Puzzle,
     },
-  ]
+    {
+      title: "Settings",
+      url: `/forms/${formId}/settings`,
+      icon: Settings,
+    },
+  ];
 
   return (
     <SidebarGroup>
@@ -47,5 +52,5 @@ export function FormNav() {
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

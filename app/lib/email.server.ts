@@ -1,12 +1,12 @@
-import nodemailer from "nodemailer"
-import type { EmailConfig } from "#/types/settings"
-import type { SubmissionEmailData } from "#/types/submission"
+import nodemailer from "nodemailer";
+import type { EmailConfig } from "#/types/settings";
+import type { SubmissionEmailData } from "#/types/submission";
 
 /**
  * Sends a test email to verify SMTP settings
  */
 export async function sendTestEmail(
-  config: EmailConfig
+  config: EmailConfig,
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
     // Create nodemailer transporter
@@ -17,21 +17,21 @@ export async function sendTestEmail(
         user: config.notification_email,
         pass: config.notification_email_password,
       },
-    })
+    });
 
     // Send test email
     const info = await transporter.sendMail({
       from: config.notification_email,
       to: config.notification_email,
-      subject: "FormZero - Test Email",
-      text: "This is a test email from FormZero. Your SMTP settings are working correctly!",
+      subject: "Тестовое письмо",
+      text: "Это тестовое письмо. Настройки SMTP работают корректно!",
       html: `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Email</title>
+  <title>Тестовое письмо</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
@@ -43,7 +43,7 @@ export async function sendTestEmail(
           <tr>
             <td style="background-color: #252525; padding: 32px; text-align: center; border-bottom: 1px solid rgba(0, 0, 0, 0.1);">
               <h1 style="margin: 0; color: #fafafa; font-size: 24px; font-weight: 600; letter-spacing: -0.5px;">
-                Test Email
+                Тестовое письмо
               </h1>
             </td>
           </tr>
@@ -52,19 +52,10 @@ export async function sendTestEmail(
           <tr>
             <td style="padding: 32px;">
               <p style="margin: 0 0 16px 0; color: #252525; font-size: 16px; line-height: 1.6;">
-                This is a test email from <strong>FormZero</strong>.
+                Это тестовое письмо.
               </p>
               <p style="margin: 0; color: #252525; font-size: 16px; line-height: 1.6;">
-                Your SMTP settings are working correctly!
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #fafafa; padding: 24px 32px; text-align: center; border-top: 1px solid #ebebeb;">
-              <p style="margin: 0; color: #8e8e8e; font-size: 14px;">
-                Sent by <strong style="color: #595959;">FormZero</strong>
+                Настройки SMTP работают корректно!
               </p>
             </td>
           </tr>
@@ -76,25 +67,28 @@ export async function sendTestEmail(
 </body>
 </html>
       `.trim(),
-    })
+    });
 
-    return { success: true, messageId: info.messageId }
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("Error sending test email:", error)
+    console.error("Error sending test email:", error);
 
     // Provide more specific error message
-    let errorMessage = "Failed to send test email"
+    let errorMessage = "Failed to send test email";
     if (error instanceof Error) {
       if (error.message.includes("Invalid login")) {
-        errorMessage = "Invalid email or password"
-      } else if (error.message.includes("ENOTFOUND") || error.message.includes("ECONNREFUSED")) {
-        errorMessage = "Cannot connect to SMTP server"
+        errorMessage = "Invalid email or password";
+      } else if (
+        error.message.includes("ENOTFOUND") ||
+        error.message.includes("ECONNREFUSED")
+      ) {
+        errorMessage = "Cannot connect to SMTP server";
       } else {
-        errorMessage = error.message
+        errorMessage = error.message;
       }
     }
 
-    return { success: false, error: errorMessage }
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -103,7 +97,8 @@ export async function sendTestEmail(
  */
 export async function sendSubmissionNotification(
   config: EmailConfig,
-  submission: SubmissionEmailData
+  submission: SubmissionEmailData,
+  toEmail?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Create nodemailer transporter
@@ -114,40 +109,37 @@ export async function sendSubmissionNotification(
         user: config.notification_email,
         pass: config.notification_email_password,
       },
-    })
+    });
 
     // Format the submission data for email display
-    const submissionHtml = formatSubmissionData(submission.data)
-    const submissionText = formatSubmissionDataText(submission.data)
+    const submissionHtml = formatSubmissionData(submission.data);
+    const submissionText = formatSubmissionDataText(submission.data);
 
     // Format timestamp
-    const timestamp = new Date(submission.createdAt).toLocaleString('en-US', {
-      dateStyle: 'full',
-      timeStyle: 'long',
-    })
+    const timestamp = new Date(submission.createdAt).toLocaleString("ru-RU", {
+      dateStyle: "full",
+      timeStyle: "long",
+    });
 
     // Send email
     await transporter.sendMail({
       from: config.notification_email,
-      to: config.notification_email,
-      subject: `New Submission for "${submission.formName}"`,
+      to: toEmail || config.notification_email,
+      subject: `Новая заявка для "${submission.formName}"`,
       text: `
-FormZero - New Form Submission
+Новая заявка
 
-You have received a new submission for your form "${submission.formName}".
+Получена новая заявка для формы "${submission.formName}".
 
-SUBMISSION DETAILS
-==================
-Form: ${submission.formName}
-Submission ID: ${submission.id}
-Received: ${timestamp}
-
-SUBMITTED DATA
+ДЕТАЛИ ЗАЯВКИ
 ==============
-${submissionText}
+Форма: ${submission.formName}
+Идентификатор: ${submission.id}
+Получена: ${timestamp}
 
----
-This email was automatically sent by FormZero
+ОТПРАВЛЕННЫЕ ДАННЫЕ
+====================
+${submissionText}
       `.trim(),
       html: `
 <!DOCTYPE html>
@@ -155,7 +147,7 @@ This email was automatically sent by FormZero
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Form Submission</title>
+  <title>Новая заявка</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
@@ -167,7 +159,7 @@ This email was automatically sent by FormZero
           <tr>
             <td style="background-color: #252525; padding: 32px; text-align: center; border-bottom: 1px solid rgba(0, 0, 0, 0.1);">
               <h1 style="margin: 0; color: #fafafa; font-size: 24px; font-weight: 600; letter-spacing: -0.5px;">
-                New Form Submission
+                Новая заявка
               </h1>
               <p style="margin: 8px 0 0 0; color: #b4b4b4; font-size: 16px;">
                 ${submission.formName}
@@ -181,18 +173,18 @@ This email was automatically sent by FormZero
 
               <!-- Introduction -->
               <p style="margin: 0 0 24px 0; color: #252525; font-size: 16px; line-height: 1.6;">
-                You have received a new submission for your form <strong>${submission.formName}</strong>.
+                Получена новая заявка для формы <strong>${submission.formName}</strong>.
               </p>
 
               <!-- Metadata -->
               <div style="background-color: #fafafa; border-left: 4px solid #252525; padding: 16px; margin-bottom: 32px; border-radius: 6px;">
                 <table width="100%" cellpadding="4" cellspacing="0">
                   <tr>
-                    <td style="color: #8e8e8e; font-size: 14px; font-weight: 500; padding: 4px 0;">Submission ID:</td>
+                    <td style="color: #8e8e8e; font-size: 14px; font-weight: 500; padding: 4px 0;">Идентификатор:</td>
                     <td style="color: #252525; font-size: 14px; font-family: 'Courier New', monospace; padding: 4px 0;">${submission.id}</td>
                   </tr>
                   <tr>
-                    <td style="color: #8e8e8e; font-size: 14px; font-weight: 500; padding: 4px 0;">Received:</td>
+                    <td style="color: #8e8e8e; font-size: 14px; font-weight: 500; padding: 4px 0;">Получена:</td>
                     <td style="color: #252525; font-size: 14px; padding: 4px 0;">${timestamp}</td>
                   </tr>
                 </table>
@@ -200,20 +192,11 @@ This email was automatically sent by FormZero
 
               <!-- Submission Data -->
               <h2 style="margin: 0 0 16px 0; color: #252525; font-size: 18px; font-weight: 600;">
-                Submitted Data
+                Отправленные данные
               </h2>
 
               ${submissionHtml}
 
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #fafafa; padding: 24px 32px; text-align: center; border-top: 1px solid #ebebeb;">
-              <p style="margin: 0; color: #8e8e8e; font-size: 14px;">
-                Sent by <strong style="color: #595959;">FormZero</strong>
-              </p>
             </td>
           </tr>
 
@@ -224,18 +207,18 @@ This email was automatically sent by FormZero
 </body>
 </html>
       `.trim(),
-    })
+    });
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error("Error sending notification email:", error)
+    console.error("Error sending notification email:", error);
 
-    let errorMessage = "Failed to send notification email"
+    let errorMessage = "Failed to send notification email";
     if (error instanceof Error) {
-      errorMessage = error.message
+      errorMessage = error.message;
     }
 
-    return { success: false, error: errorMessage }
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -243,19 +226,19 @@ This email was automatically sent by FormZero
  * Formats submission data as HTML table
  */
 function formatSubmissionData(data: Record<string, any>): string {
-  const entries = Object.entries(data)
+  const entries = Object.entries(data);
 
   if (entries.length === 0) {
-    return '<p style="color: #8e8e8e; font-style: italic;">No data submitted</p>'
+    return '<p style="color: #8e8e8e; font-style: italic;">Данные не переданы</p>';
   }
 
   const rows = entries
     .map(([key, value]) => {
       const displayKey = key
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase())
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
 
-      let displayValue = formatValue(value)
+      let displayValue = formatValue(value);
 
       return `
         <tr>
@@ -266,36 +249,36 @@ function formatSubmissionData(data: Record<string, any>): string {
             ${displayValue}
           </td>
         </tr>
-      `
+      `;
     })
-    .join('')
+    .join("");
 
   return `
     <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #ebebeb; border-radius: 6px; overflow: hidden;">
       ${rows}
     </table>
-  `
+  `;
 }
 
 /**
  * Formats submission data as plain text
  */
 function formatSubmissionDataText(data: Record<string, any>): string {
-  const entries = Object.entries(data)
+  const entries = Object.entries(data);
 
   if (entries.length === 0) {
-    return 'No data submitted'
+    return "Данные не переданы";
   }
 
   return entries
     .map(([key, value]) => {
       const displayKey = key
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase())
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
 
-      return `${displayKey}: ${formatValueText(value)}`
+      return `${displayKey}: ${formatValueText(value)}`;
     })
-    .join('\n')
+    .join("\n");
 }
 
 /**
@@ -303,40 +286,44 @@ function formatSubmissionDataText(data: Record<string, any>): string {
  */
 function formatValue(value: any): string {
   if (value === null || value === undefined) {
-    return '<span style="color: #b4b4b4; font-style: italic;">Not provided</span>'
+    return '<span style="color: #b4b4b4; font-style: italic;">Не указано</span>';
   }
 
-  if (typeof value === 'boolean') {
-    return value ? '✓ Yes' : '✗ No'
+  if (typeof value === "boolean") {
+    return value ? "✓ Да" : "✗ Нет";
   }
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return '<span style="color: #b4b4b4; font-style: italic;">Empty list</span>'
+      return '<span style="color: #b4b4b4; font-style: italic;">Пустой список</span>';
     }
-    return '<ul style="margin: 0; padding-left: 20px;">' +
-      value.map(item => `<li>${escapeHtml(String(item))}</li>`).join('') +
-      '</ul>'
+    return (
+      '<ul style="margin: 0; padding-left: 20px;">' +
+      value.map((item) => `<li>${escapeHtml(String(item))}</li>`).join("") +
+      "</ul>"
+    );
   }
 
-  if (typeof value === 'object') {
-    return '<pre style="margin: 0; padding: 8px; background-color: #fafafa; border-radius: 6px; font-size: 13px; overflow-x: auto; color: #252525;">' +
+  if (typeof value === "object") {
+    return (
+      '<pre style="margin: 0; padding: 8px; background-color: #fafafa; border-radius: 6px; font-size: 13px; overflow-x: auto; color: #252525;">' +
       escapeHtml(JSON.stringify(value, null, 2)) +
-      '</pre>'
+      "</pre>"
+    );
   }
 
   // Check if it looks like a URL
-  const stringValue = String(value)
+  const stringValue = String(value);
   if (stringValue.match(/^https?:\/\//)) {
-    return `<a href="${escapeHtml(stringValue)}" style="color: #252525; text-decoration: underline;">${escapeHtml(stringValue)}</a>`
+    return `<a href="${escapeHtml(stringValue)}" style="color: #252525; text-decoration: underline;">${escapeHtml(stringValue)}</a>`;
   }
 
   // Check if it looks like an email
   if (stringValue.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    return `<a href="mailto:${escapeHtml(stringValue)}" style="color: #252525; text-decoration: underline;">${escapeHtml(stringValue)}</a>`
+    return `<a href="mailto:${escapeHtml(stringValue)}" style="color: #252525; text-decoration: underline;">${escapeHtml(stringValue)}</a>`;
   }
 
-  return escapeHtml(stringValue)
+  return escapeHtml(stringValue);
 }
 
 /**
@@ -344,25 +331,25 @@ function formatValue(value: any): string {
  */
 function formatValueText(value: any): string {
   if (value === null || value === undefined) {
-    return '(Not provided)'
+    return "(Не указано)";
   }
 
-  if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No'
+  if (typeof value === "boolean") {
+    return value ? "Да" : "Нет";
   }
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return '(Empty list)'
+      return "(Пустой список)";
     }
-    return '\n  - ' + value.map(item => String(item)).join('\n  - ')
+    return "\n  - " + value.map((item) => String(item)).join("\n  - ");
   }
 
-  if (typeof value === 'object') {
-    return '\n' + JSON.stringify(value, null, 2)
+  if (typeof value === "object") {
+    return "\n" + JSON.stringify(value, null, 2);
   }
 
-  return String(value)
+  return String(value);
 }
 
 /**
@@ -370,11 +357,11 @@ function formatValueText(value: any): string {
  */
 function escapeHtml(text: string): string {
   const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  }
-  return text.replace(/[&<>"']/g, (m) => map[m])
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
 }

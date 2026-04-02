@@ -23,7 +23,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   // For non-OPTIONS requests to this endpoint, return method not allowed
   return data(
     { error: "Method not allowed" },
-    { status: 405, headers: corsHeaders }
+    { status: 405, headers: corsHeaders },
   );
 }
 
@@ -49,7 +49,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       if (isJsonRequest) {
         return data(
           { success: false, error: "Form not found" },
-          { status: 404, headers: corsHeaders }
+          { status: 404, headers: corsHeaders },
         );
       }
       return redirect("/error?error=form_not_found");
@@ -70,7 +70,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       if (isJsonRequest) {
         return data(
           { success: false, error: "Unsupported content type" },
-          { status: 415, headers: corsHeaders }
+          { status: 415, headers: corsHeaders },
         );
       }
       return redirect("/error?error=unsupported_content_type");
@@ -83,7 +83,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     // Store submission in database
     await db
       .prepare(
-        "INSERT INTO submissions (id, form_id, data, created_at) VALUES (?, ?, ?, ?)"
+        "INSERT INTO submissions (id, form_id, data, created_at) VALUES (?, ?, ?, ?)",
       )
       .bind(submissionId, formId, JSON.stringify(submissionData), createdAt)
       .run();
@@ -96,13 +96,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
           // Fetch global settings
           const globalSettings = await db
             .prepare(
-              "SELECT notification_email, notification_email_password, smtp_host, smtp_port FROM settings WHERE id = 'global'"
+              "SELECT notification_email, notification_email_password, smtp_host, smtp_port FROM settings WHERE id = 'global'",
             )
             .first<{
-              notification_email: string | null
-              notification_email_password: string | null
-              smtp_host: string | null
-              smtp_port: number | null
+              notification_email: string | null;
+              notification_email_password: string | null;
+              smtp_host: string | null;
+              smtp_port: number | null;
             }>();
 
           // Check if email notifications are configured
@@ -112,42 +112,49 @@ export async function action({ request, params, context }: Route.ActionArgs) {
             globalSettings?.smtp_host &&
             globalSettings?.smtp_port
           ) {
-            // Fetch form name for email
+            // Fetch form name and per-form notification email
             const formData = await db
-              .prepare("SELECT name FROM forms WHERE id = ?")
+              .prepare(
+                "SELECT name, notification_email FROM forms WHERE id = ?",
+              )
               .bind(formId)
-              .first<{ name: string }>();
+              .first<{ name: string; notification_email: string | null }>();
 
             if (formData) {
               // Type-safe email config (null checks already done above)
               const emailConfig: EmailConfig = {
                 notification_email: globalSettings.notification_email,
-                notification_email_password: globalSettings.notification_email_password,
+                notification_email_password:
+                  globalSettings.notification_email_password,
                 smtp_host: globalSettings.smtp_host,
                 smtp_port: globalSettings.smtp_port,
               };
 
-              await sendSubmissionNotification(emailConfig, {
-                id: submissionId,
-                formId: formId,
-                formName: formData.name,
-                data: submissionData,
-                createdAt: createdAt,
-              });
+              await sendSubmissionNotification(
+                emailConfig,
+                {
+                  id: submissionId,
+                  formId: formId,
+                  formName: formData.name,
+                  data: submissionData,
+                  createdAt: createdAt,
+                },
+                formData.notification_email || undefined,
+              );
             }
           }
         } catch (error) {
           // Log error but don't fail the request
           console.error("Failed to send email notification:", error);
         }
-      })()
+      })(),
     );
 
     if (isJsonRequest) {
       // Return JSON response
       return data(
         { success: true, id: submissionId },
-        { status: 201, headers: corsHeaders }
+        { status: 201, headers: corsHeaders },
       );
     } else {
       // Handle redirect for HTML form submissions
@@ -173,7 +180,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (isJsonRequest) {
       return data(
         { success: false, error: "Failed to process submission" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeaders },
       );
     } else {
       return redirect("/error?error=internal_error");
